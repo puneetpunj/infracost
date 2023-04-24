@@ -59,7 +59,7 @@ jobs:
           export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}          
           infracost comment github \
             --path=/tmp/infracost.json \
-            --repo=$(GITHUB_REPOSITORY) \
+            --repo=$GITHUB_REPOSITORY \
             --github-token=${{github.token}} \
             --pull-request=${{github.event.pull_request.number}} \
             --behavior=update
