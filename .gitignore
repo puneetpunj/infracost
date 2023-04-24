@@ -35,4 +35,4 @@ tf.json
 # python virtual env
 **/.venv
 .checkov
-.infracost/*
+**/.infracost/*
