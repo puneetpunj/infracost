@@ -1,0 +1,38 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+tf.json
+# terraform plan files
+*.plan
+
+# ignore the hcl file (Dependency Lock File) as this repo represent a module
+.terraform.lock.hcl
+
+.DS_STORE
+
+# python cache files
+**/__pycache__/*
+
+# docker env variables
+.env
+
+# vscode setting
+.vscode
+
+# python virtual env
+**/.venv
+.checkov
+.infracost/*

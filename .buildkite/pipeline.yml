@@ -1,0 +1,121 @@
+agents:
+  queue: default
+
+env:
+  AWS_RETRY_MODE: standard
+  AWS_MAX_ATTEMPTS: 10
+
+steps:
+  - label: "where are we?"
+    command:
+      - env | sort
+
+  - wait
+
+  - group: ":terraform: Infrastructure Checks"
+    key: "terraform-checks"
+    steps:
+
+    - key: "fmt:test"
+      label: ":terraform: Test: Check terraform formatting"
+      command: make fmt_check
+
+    - label: ":terraform: Validate terraform code"
+      key: "terraform-validate"
+      command: make validate    
+
+    - label: ":terraform: Run Checkov Analysis"
+      key: "terraform-analysis"
+      command: make checkov_analyse
+      plugins:
+        artifacts#v1.2.0:
+              upload:
+                - .checkov/*junit*.xml      
+
+    - label: ":terraform: Annotate Checkov Results"
+      key: "annotate-checkov-results"
+      depends_on: "terraform-analysis"
+      plugins:
+        - junit-annotate#v2.4.1:
+            artifacts: .checkov/*junit*.xml 
+
+    - label: ":terraform: Infracost Analysis"
+      key: "terraform-infracost"
+      command: make infracost_analyse
+      agents:
+        queue: deploy-dev
+      plugins:
+      - artifacts#v1.2.0:
+              upload:
+                - .infracost/*
+      - seek-oss/aws-sm#v2.3.1:
+          env:
+            INFRACOST_API_KEY: infracost-api-key
+
+  - group: ":nodejs: :react: Application Build and Tests"
+    key: "application-build-tests"
+    steps:
+    - label: ":nodejs: :jest: :react: Run Unit Tests and Build"
+      key: "react-unit-test"
+      command: make run_unit_tests_and_build
+      plugins:
+        artifacts#v1.2.0:
+            upload: "react-app/*.zip"
+
+  - wait: ~
+  - group: ":aws: Dev Environment"
+    key: "aws-dev"
+    steps:
+    - label: ":terraform: Plan Dev"
+      key: "terraform-plan-dev"
+      command: "make plan"
+      agents:
+        queue: deploy-dev
+      plugins:
+        artifacts#v1.2.0:
+              upload:
+                - "infrastructure/.terraform/dev.tfplan"
+              download: "react-app/*.zip"
+
+    - label: ":terraform: :rocket: Deploy Dev"
+      key: "terraform-apply-dev"
+      command: "make apply"
+      agents:
+        queue: deploy-dev
+      depends_on:
+        - "terraform-plan-dev"
+      branches: "main"
+      plugins:
+        artifacts#v1.2.0:
+          download:
+            - "infrastructure/.terraform/dev.tfplan"
+            - "react-app/*.zip"
+  
+  - wait: ~
+  - group: ":aws: Demo Environment"
+    key: "aws-demo"
+    steps:
+    - label: ":terraform: Plan Demo"
+      key: "terraform-plan-demo"
+      command: "ENV=demo make plan"
+      agents:
+        queue: deploy-demo
+      plugins:
+        artifacts#v1.2.0:
+              upload:
+                - "infrastructure/.terraform/demo.tfplan"
+              download: "react-app/*.zip"
+
+    - label: ":terraform: :rocket: Deploy Demo"
+      key: "terraform-apply-demo"
+      command: "ENV=demo make apply"
+      agents:
+        queue: deploy-demo
+      depends_on:
+        - "terraform-plan-demo"
+      branches: "main"
+      plugins:
+        artifacts#v1.2.0:
+          download:
+            - "infrastructure/.terraform/demo.tfplan"
+            - "react-app/*.zip"

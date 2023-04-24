@@ -1,0 +1,7 @@
+version: 0.1
+projects:
+  - path: infrastructure
+    name: dev
+    terraform_var_files:
+      - deployment/dev.tfvars
+    
