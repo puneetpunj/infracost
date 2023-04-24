@@ -23,7 +23,7 @@ ifeq ($(BUILDKITE), true)
 endif
 
 # infracost setup
-INFRACOST_ARTIFACTS_DIR=.infracost
+INFRACOST_ARTIFACTS_DIR=/tmp
 INFRACOST_DIFF_FILE=infracost.json
 INFRACOST_BASE_FILE=infracost-base.json
 INFRACOST_CONFIG=.infracost.yml
