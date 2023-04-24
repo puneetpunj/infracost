@@ -1,0 +1,61 @@
+name: "Infracost Analysis for PRs"    
+
+on: [pull_request]
+
+jobs:
+  infracost:
+    name: Infracost Analysis
+
+    runs-on: ubuntu-latest
+
+    steps:      
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2        
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+      
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: '${{ github.event.pull_request.base.ref }}'
+
+      - name: Print debug info
+        run: |
+          echo github base branch is ${{github.event.pull_request.base.ref}}
+          echo github.event.pull_request.number is ${{github.event.pull_request.number}}
+
+      # Generate Infracost JSON file as the baseline.
+      - name: Generate Infracost cost estimate baseline
+        run: |
+          export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}          
+          make infracost_breakdown
+
+      # Checkout the current PR branch so we can create a diff.
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+
+      # Generate an Infracost diff and save it to a JSON file.
+      - name: Generate Infracost diff
+        run: |
+          export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}          
+          make infracost_diff
+
+      # generate the html report based on the JSON output from last step
+      - name: Generate Infracost Report
+        run: |
+          export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}
+          make infracost_report
+
+      # upload the report to artifact so subsequent workflow can download the report and email it as attachment
+      - uses: actions/upload-artifact@v3
+        with:
+          name: report.html
+          path: .infracost/report.html
+
+      # Posts a comment to the PR using the 'update' behavior.
+      # This creates a single comment and updates it. The "quietest" option.      
+      - name: Post Infracost comment
+        run: |
+          export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}          
+          make infracost_comment
+                    

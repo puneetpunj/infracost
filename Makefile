@@ -66,17 +66,42 @@ endif
 
 .PHONY: plan 
 
+infracost_breakdown:
+	infracost breakdown \
+		--config-file=$(INFRACOST_CONFIG) \
+        --format=json \
+        --out-file=$(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_BASE_FILE)
+
+.PHONY: infracost_breakdown
+
+infracost_diff:
+	infracost diff \
+		--config-file=$(INFRACOST_CONFIG) \
+		--format=json \
+		--compare-to=$(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_BASE_FILE) \
+		--out-file=$(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_DIFF_FILE)
+
+.PHONY: infracost_diff
+
+infracost_report:
+	infracost output \
+		--path $(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_DIFF_FILE) \
+		--show-skipped \
+		--format html \
+		--out-file $(INFRACOST_ARTIFACTS_DIR)/report.html
+
+.PHONY: infracost_report
+
 infracost_analyse:
 	mkdir -p $(INFRACOST_ARTIFACTS_DIR)
 	# checkout main or PR current base branch and create base cost	
 	# if not in buildkite use base file for comparison
 	# TODO: enable below once this PR is merged to main
 	# git checkout $(BASE_BRANCH)
-
 	infracost breakdown \
 		--config-file=$(INFRACOST_CONFIG) \
         --format=json \
-        --out-file=$(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_BASE_FILE)
+        --out-file=$(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_BASE_FILE)	
 	# checkout current PR branch and generate diff
 	git checkout $(CURRENT_BRANCH)
 	infracost diff \
@@ -101,6 +126,16 @@ ifdef BUILDKITE
         --behavior=update
 endif
 .PHONY: infracost_analyse
+
+infracost_comment:
+	infracost comment github \
+		--path=$(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_DIFF_FILE) \
+    	--repo=$(GITHUB_REPOSITORY) \
+         --github-token=${{github.token}} \
+        --pull-request=${{github.event.pull_request.number}} \
+        --behavior=update
+
+.PHONY: infracost_comment
 
 apply: init unzip_react_app
 ifdef BUILDKITE
