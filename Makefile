@@ -131,8 +131,8 @@ infracost_comment:
 	infracost comment github \
 		--path=$(INFRACOST_ARTIFACTS_DIR)/$(INFRACOST_DIFF_FILE) \
     	--repo=$(GITHUB_REPOSITORY) \
-         --github-token=${{github.token}} \
-        --pull-request=${{github.event.pull_request.number}} \
+        --github-token=$(github.token) \
+        --pull-request=$(github.event.pull_request.number) \
         --behavior=update
 
 .PHONY: infracost_comment
